@@ -1,36 +1,32 @@
-use std::{
-    io::Read,
-    net::{TcpListener, TcpStream},
-};
-
-use std::io::Write;
+use std::io::{Read, Write};
+use std::net::{TcpListener, TcpStream};
 
 fn main() {
     // You can use print statements as follows for debugging, they'll be visible when running tests.
-    println!("Logs from your program will appear here!");
 
     // Uncomment this block to pass the first stage
 
     let listener = TcpListener::bind("127.0.0.1:6379").unwrap();
+    println!("Logs from your program will appear here!");
+    println!("Listening on port 6379");
 
     for stream in listener.incoming() {
         match stream {
             Ok(mut _stream) => {
-                // define a buffer 0-5
-                let mut buffer = [10; 12];
-                _stream.read_exact(&mut buffer).unwrap();
-                let command = String::from_utf8_lossy(&buffer);
-                // split command using the split method
-                let command = command.split("\r\n").collect::<Vec<&str>>();
-                let ping_command = command.last().unwrap().to_ascii_lowercase();
-                // check if the command is ping
-                if ping_command == &*"ping" {
+                let mut buffer = [0; 512];
+                loop {
+                    let response = _stream.read(&mut buffer).unwrap();
+                    if response == 0 {
+                        println!("client closed the connection");
+                        break;
+                    }
                     // send pong response
                     send_pong_response(&mut _stream);
                 }
             }
             Err(e) => {
                 println!("error: {}", e);
+                // break;
             }
         }
     }
@@ -44,3 +40,5 @@ fn send_pong_response(stream: &mut TcpStream) {
     }
     stream.flush().unwrap();
 }
+
+// handle multiple requests
